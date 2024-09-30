@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shamir's Secret Sharing</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        textarea { width: 100%; }
+        pre { background: #f9f9f9; padding: 12px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>Shamir's Secret Sharing</h1>
+    <textarea id="inputData" rows="20" placeholder='Enter your JSON data here'></textarea><br>
+    <button onclick="processSecrets()">Reveal Secrets</button>
+    <h2>Results</h2>
+    <pre id="output"></pre>
+
+    <script>
+        // Function to convert a base-n string to a number
+        function parseBaseValue(base, value) {
+            return parseInt(value, base);
+        }
+
+        // Lagrange interpolation function
+        function interpolateLagrange(points, x) {
+            return points.reduce((accum, [xi, yi], i) => {
+                let product = points.reduce((prod, [xj], j) => {
+                    return i !== j ? prod * (x - xj) / (xi - xj) : prod;
+                }, 1);
+                return accum + product * yi;
+            }, 0);
+        }
+
+        // Function to check for incorrect points in the set
+        function validatePoints(points) {
+            let constant = interpolateLagrange(points, 0);
+            let errors = points.filter(([x, y]) => Math.round(interpolateLagrange(points, x)) !== Math.round(y));
+            return { constant, errors };
+        }
+
+        // Function to process the input and find secrets
+        function processSecrets() {
+            const input = JSON.parse(document.getElementById('inputData').value);
+            const output = document.getElementById('output');
+
+            // First test case
+            const testCase1 = [
+                [1, parseBaseValue(input["1"].base, input["1"].value)],
+                [2, parseBaseValue(input["2"].base, input["2"].value)],
+                [3, parseBaseValue(input["3"].base, input["3"].value)],
+                [6, parseBaseValue(input["6"].base, input["6"].value)]
+            ];
+
+            const secret1 = validatePoints(testCase1).constant;
+
+            // Second test case
+            const testCase2 = [
+                [1, parseBaseValue(input["1"].base, input["1"].value)],
+                [2, parseBaseValue(input["2"].base, input["2"].value)],
+                [3, parseBaseValue(input["3"].base, input["3"].value)],
+                [4, parseBaseValue(input["4"].base, input["4"].value)],
+                [5, parseBaseValue(input["5"].base, input["5"].value)],
+                [6, parseBaseValue(input["6"].base, input["6"].value)],
+                [7, parseBaseValue(input["7"].base, input["7"].value)],
+                [8, parseBaseValue(input["8"].base, input["8"].value)],
+                [9, parseBaseValue(input["9"].base, input["9"].value)]
+            ];
+
+            const { constant: secret2, errors: incorrectPoints } = validatePoints(testCase2);
+
+            // Display results
+            let result = `Secret from first test case: ${secret1}\n`;
+            result += `Secret from second test case: ${secret2}\n`;
+
+            if (incorrectPoints.length) {
+                result += `Incorrect points detected in second test case:\n`;
+                incorrectPoints.forEach(({ x, y }) => {
+                    result += `Point: (${x}, ${y})\n`;
+                });
+            } else {
+                result += `No incorrect points in second test case.\n`;
+            }
+
+            output.textContent = result;
+        }
+    </script>
+</body>
+</html>
